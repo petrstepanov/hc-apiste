@@ -15,11 +15,11 @@ int main(void){
 #include <ArduinoRS485.h> // ArduinoModbus depends on the ArduinoRS485 library
 #include <ArduinoModbus.h>
 
-// Arduino Zero only
+// Arduino Zero only - fix Sserial Output
 #define Serial SerialUSB
 
 // Modbus - Unit Id
-#define SLAVE_ADDRESS 1
+#define SLAVE_ADDRESS 0x0001
 #define NUM_REGISTERS 1
 
 // Define pins
@@ -90,6 +90,8 @@ void setup() {
   if (Ethernet.linkStatus() == LinkOFF) {
     Serial.println("Ethernet cable not connected");
   }
+
+  checkConnectModbus();
 }
 
 // Loop is the main loop body
@@ -111,20 +113,6 @@ void loop() {
     // mySerial...
   }       
 
-  // Modbus test
-  if (!modbusTCPClient.connected()) {
-    Serial.println("Modbus TCP client is not conected. Connecting...");
-    
-    if (!modbusTCPClient.begin(ipServer, 502)) {
-      Serial.println("Modbus TCP client failed to connect");
-    } else {
-      Serial.println("Modbus TCP client connected successfully");
-      // modbusTCPClient.setTimeout(5000);
-    }
-  } else {
-      Serial.println("Modbus TCP client is connected");
-  }
-
   // Test - read set temperature - not works
   // int temp = modbusTCPClient.inputRegisterRead(1, 0x0002);
   // Serial.print("Set temperature: ");
@@ -139,9 +127,10 @@ void loop() {
   int registerAddress = 0x0002; // F - from AC PDF Table - current tempearture
   int registerQuantity = 1;// G - Specifies the quantity of registers to read or write.
   
+  checkConnectModbus();
 
   Serial.println("Reading Input (R) or Holding (R/W) Registers:");
-  modbusTCPClient.requestFrom(0x0001, INPUT_REGISTERS, 0x0000, 1);
+  modbusTCPClient.requestFrom(SLAVE_ADDRESS, INPUT_REGISTERS, 0x0000, NUM_REGISTERS);
   int nValues = modbusTCPClient.available();
   Serial.print("Available values: ");
   Serial.println(nValues);
@@ -154,7 +143,7 @@ void loop() {
   // modbusTCPClient.requestFrom(0x0001 COILS, 0x0000, NUM_REGISTERS); // illegal function
   // modbusTCPClient.requestFrom(0x0001, DISCRETE_INPUTS, 0x0000, NUM_REGISTERS); // illegal function
 
-  long t = modbusTCPClient.inputRegisterRead(0x0001, 0x0100);
+  long t = modbusTCPClient.inputRegisterRead(SLAVE_ADDRESS, 0x0100);
   Serial.println(t);
   Serial.println(modbusTCPClient.lastError());
     // // write the value of 0x01, to the coil at address 0x00
@@ -186,4 +175,19 @@ void alarm(bool state){
     digitalWrite(LED, LOW);
     digitalWrite(BUZZ, LOW);
   }
+}
+
+void checkConnectModbus(){
+  // Check if Modbus TCP client is connected
+  while(!modbusTCPClient.connected()){
+    Serial.println("\nModbus TCP client is not conected");
+    modbusTCPClient.begin(ipServer, 502);
+    // Delay 10 seconds
+    Serial.print("Connecting.");
+    for (int i=0; i<10; i++){
+      Serial.print(".");
+      delay(500);
+    }
+  }
+  Serial.println("\nModbus TCP client is connected");
 }
