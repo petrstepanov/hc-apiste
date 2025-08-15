@@ -42,7 +42,7 @@ IPAddress ip(192, 168, 1, 2);   // Static IP assigned to the Arduino - master, c
 EthernetClient ethernetClient;
 ModbusTCPClient modbusTCPClient(ethernetClient);
 
-IPAddress server(192, 168, 1, 1); // IP Address of your Modbus server - the AC (slave, server)
+IPAddress ipServer(192, 168, 1, 1); // IP Address of your Modbus server - the AC (slave, server)
 
 // EthernetServer ethServer(502);  // Port 502 should match AC's port
 // ModbusTCPServer modbusTCPServer;
@@ -77,7 +77,7 @@ void setup() {
   // Configure Modbus Client (master)
   Serial.println("Starting Ethernet Modbus TCP Client");
 
-  Ethernet.init(ETHERNET_CS);
+  // Ethernet.init(ETHERNET_CS);
   Ethernet.begin(mac, ip);
 
   // Check for Ethernet hardware present
@@ -94,7 +94,7 @@ void setup() {
 
 // Loop is the main loop body
 void loop() {
-  Serial.println("Loop start");
+  Serial.println("");
 
   // Read water level
   int val = digitalRead(WTR);
@@ -113,13 +113,16 @@ void loop() {
 
   // Modbus test
   if (!modbusTCPClient.connected()) {
-    Serial.println("Attempting to connect to Modbus TCP server");
+    Serial.println("Modbus TCP client is not conected. Connecting...");
     
-    if (!modbusTCPClient.begin(server, 502)) {
-      Serial.println("Modbus TCP Client failed to connect");
+    if (!modbusTCPClient.begin(ipServer, 502)) {
+      Serial.println("Modbus TCP client failed to connect");
     } else {
-      Serial.println("Modbus TCP Client connected successfully");
+      Serial.println("Modbus TCP client connected successfully");
+      // modbusTCPClient.setTimeout(5000);
     }
+  } else {
+      Serial.println("Modbus TCP client is connected");
   }
 
   // Test - read set temperature - not works
@@ -138,7 +141,7 @@ void loop() {
   
 
   Serial.println("Reading Input (R) or Holding (R/W) Registers:");
-  modbusTCPClient.requestFrom(1, INPUT_REGISTERS, 0x0100, 1);
+  modbusTCPClient.requestFrom(0x0001, INPUT_REGISTERS, 0x0000, 1);
   int nValues = modbusTCPClient.available();
   Serial.print("Available values: ");
   Serial.println(nValues);
@@ -151,13 +154,9 @@ void loop() {
   // modbusTCPClient.requestFrom(0x0001 COILS, 0x0000, NUM_REGISTERS); // illegal function
   // modbusTCPClient.requestFrom(0x0001, DISCRETE_INPUTS, 0x0000, NUM_REGISTERS); // illegal function
 
-  // long t = modbusTCPClient.inputRegisterRead(1, 0x0000);
-  // Serial.println(t);
-
-// (1, int type, int address, int nb);
-    //   Serial.println(modbusTCPClient.lastError());
-    // }
-
+  long t = modbusTCPClient.inputRegisterRead(0x0001, 0x0100);
+  Serial.println(t);
+  Serial.println(modbusTCPClient.lastError());
     // // write the value of 0x01, to the coil at address 0x00
     // if (!modbusTCPClient.coilWrite(0x00, 0x01)) {
     //   Serial.print("Failed to write coil! ");
