@@ -36,7 +36,7 @@ int main(void){
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 // The IP address will be dependent on your local network:
 // https://github.com/arduino-libraries/ArduinoModbus/blob/master/examples/TCP/EthernetModbusClientToggle/EthernetModbusClientToggle.ino
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+byte mac[] = {0xA8, 0x61, 0x0A, 0xAE, 0x34, 0x12};
 IPAddress ip(192, 168, 1, 2);   // Static IP assigned to the Arduino - master, client.
 
 EthernetClient ethernetClient;
