@@ -9,17 +9,17 @@ int main(void){
 */
 
 // Required libraries
-// #include <SoftwareSerial.h>
+// #include <SoftwareSerialUSB.h>
 
 #include <Ethernet.h>
 #include <ArduinoRS485.h> // ArduinoModbus depends on the ArduinoRS485 library
 #include <ArduinoModbus.h>
 
 // Arduino Zero only - fix Sserial Output
-#define Serial SerialUSB
+// #define Serial SerialUSB
 
 // Modbus - Unit Id
-#define SLAVE_ADDRESS 0x0001
+#define SERVER_ADDRESS 0x0001
 #define NUM_REGISTERS 1
 
 // Define pins
@@ -58,13 +58,13 @@ IPAddress ipServer(192, 168, 1, 1); // IP Address of your Modbus server - the AC
 // Setup is called on time upon startup
 void setup() {
   // Initialize serial communication with the Arduino (TTL)
-  Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
+  SerialUSB.begin(9600);
+  while (!SerialUSB.available()) {
+     ; // wait for serial port to connect. Needed for native USB port only
   }
 
   // Initialize MAX3232 RS232 COM port communication
-  // mySerial.begin(9600);
+  // mySerialUSB.begin(9600);
 
   // Configure LED pin
   pinMode(LED, OUTPUT);    // Configures the LED pin to OUTPUT voltage
@@ -75,48 +75,47 @@ void setup() {
   digitalWrite(BUZZ, LOW);  // Output HIGH (5V) voltage to LED
 
   // Configure Modbus Client (master)
-  Serial.println("Starting Ethernet Modbus TCP Client");
+  SerialUSB.println("Starting Ethernet Modbus TCP Client");
 
   // Ethernet.init(ETHERNET_CS);
   Ethernet.begin(mac, ip);
 
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-    Serial.println("Ethernet shield not found");
-    while (true) {
-      delay(1); // do nothing, no point running without Ethernet hardware
-    }
+    SerialUSB.println("Ethernet shield not found");
+    while(true); // software abort, no point running without Ethernet hardware
   }
   if (Ethernet.linkStatus() == LinkOFF) {
-    Serial.println("Ethernet cable not connected");
+    SerialUSB.println("Ethernet cable not connected");
   }
 
+  // Check and establish Modbus client connection
   checkConnectModbus();
 }
 
 // Loop is the main loop body
 void loop() {
-  Serial.println("");
+  SerialUSB.println("");
 
   // Read water level
   int val = digitalRead(WTR);
-  // Serial.println(val);
+  // SerialUSB.println(val);
 
   if(val == LOW){
-    Serial.println("Dry");
+    SerialUSB.println("Dry");
     alarm(false);
   } else {
-    Serial.println("Wet");
+    SerialUSB.println("Wet");
     alarm(true);
 
     // TODO: Turn off the AC
-    // mySerial...
+    // mySerialUSB...
   }       
 
   // Test - read set temperature - not works
   // int temp = modbusTCPClient.inputRegisterRead(1, 0x0002);
-  // Serial.print("Set temperature: ");
-  // Serial.println(temp);
+  // SerialUSB.print("Set temperature: ");
+  // SerialUSB.println(temp);
 
   // From the AC documentation 
   int transactionId = 0x0001; // A
@@ -127,31 +126,34 @@ void loop() {
   int registerAddress = 0x0002; // F - from AC PDF Table - current tempearture
   int registerQuantity = 1;// G - Specifies the quantity of registers to read or write.
   
+  // Ensure Modbus client is working
   checkConnectModbus();
 
-  Serial.println("Reading Input (R) or Holding (R/W) Registers:");
+  // Try reading something - not works
+  /*
+  SerialUSB.println("Reading Input (R) or Holding (R/W) Registers:");
   modbusTCPClient.requestFrom(SLAVE_ADDRESS, INPUT_REGISTERS, 0x0000, NUM_REGISTERS);
   int nValues = modbusTCPClient.available();
-  Serial.print("Available values: ");
-  Serial.println(nValues);
+  SerialUSB.print("Available values: ");
+  SerialUSB.println(nValues);
   for(int i = 0; i < nValues; i++){
     long data = modbusTCPClient.read();
-    Serial.println(data);
+    SerialUSB.println(data);
   }
-  Serial.println(modbusTCPClient.lastError());
+  SerialUSB.println(modbusTCPClient.lastError());
+  */
   // modbusTCPClient.requestFrom(0x0000, COILS, 0x0000, NUM_REGISTERS); // connection timed out - maybe wrong address? trying 0x0001
   // modbusTCPClient.requestFrom(0x0001 COILS, 0x0000, NUM_REGISTERS); // illegal function
   // modbusTCPClient.requestFrom(0x0001, DISCRETE_INPUTS, 0x0000, NUM_REGISTERS); // illegal function
 
-  long t = modbusTCPClient.inputRegisterRead(SLAVE_ADDRESS, 0x0100);
-  Serial.println(t);
-  Serial.println(modbusTCPClient.lastError());
-    // // write the value of 0x01, to the coil at address 0x00
-    // if (!modbusTCPClient.coilWrite(0x00, 0x01)) {
-    //   Serial.print("Failed to write coil! ");
-    //   Serial.println(modbusTCPClient.lastError());
-    // }
-  // }  
+  // long t = modbusTCPClient.inputRegisterRead(SLAVE_ADDRESS, 0x0100);
+  // SerialUSB.println(t);
+  // SerialUSB.println(modbusTCPClient.lastError());
+
+  // Try writing something - start the AC
+  modbusTCPClient.holdingRegisterWrite(SERVER_ADDRESS, 0x2F00, 1); // illegal function 
+  modbusTCPClient.holdingRegisterWrite(SERVER_ADDRESS, 0x2F00, 1); // illegal function 
+  SerialUSB.println(modbusTCPClient.lastError());
 
   // Wait 5 seconds
   delay(5000);
@@ -180,14 +182,14 @@ void alarm(bool state){
 void checkConnectModbus(){
   // Check if Modbus TCP client is connected
   while(!modbusTCPClient.connected()){
-    Serial.println("\nModbus TCP client is not conected");
+    SerialUSB.println("\nModbus TCP client is not conected");
     modbusTCPClient.begin(ipServer, 502);
     // Delay 10 seconds
-    Serial.print("Connecting.");
+    SerialUSB.print("Connecting.");
     for (int i=0; i<10; i++){
-      Serial.print(".");
+      SerialUSB.print(".");
       delay(500);
     }
   }
-  Serial.println("\nModbus TCP client is connected");
+  SerialUSB.println("\nModbus TCP client is connected");
 }
