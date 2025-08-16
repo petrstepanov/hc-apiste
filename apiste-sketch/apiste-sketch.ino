@@ -8,6 +8,8 @@ int main(void){
 }
 */
 
+#define SerialUSB Serial
+
 // Required libraries
 // #include <SoftwareSerialUSB.h>
 
@@ -30,7 +32,7 @@ int main(void){
 #define BUZZ 13
 
 // Instantiate global variables
-https://github.com/emelianov/modbus-esp8266/blob/master/examples/TCP-Ethernet/client/client.ino
+// https://github.com/emelianov/modbus-esp8266/blob/master/examples/TCP-Ethernet/client/client.ino
 const uint16_t REG = 512;         // Modbus Hreg Offset
 IPAddress remote(192, 168, 1, 1); // Address of Modbus Slave device
 const int32_t showDelay = 5000;   // Show result every n'th mellisecond
