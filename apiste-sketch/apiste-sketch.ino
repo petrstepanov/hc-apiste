@@ -64,7 +64,7 @@ void setup() {
   // Configure Modbus Client (master)
   SerialUSB.println("Starting Ethernet Modbus TCP Client");
 
-  Ethernet.init(5);         // SS pin
+  // Ethernet.init(5);         // SS pin
   Ethernet.begin(mac, ip);  // start the Ethernet connection
   delay(1000);              // give the Ethernet shield a second to initialize
   mb.client();              // Act as Modbus TCP client
@@ -94,19 +94,22 @@ void loop() {
 
   // Test - read set temperature - not works
 if (mb.isConnected(remote)) {   // Check if connection to Modbus Slave is established
-    SerialUSB.println("Modbus connected");
+    SerialUSB.println("Modbus is connected");
     // TYPEID id, uint16_t offset, uint16_t* value, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT
-    mb.readHreg(remote, REG, &res);  // Initiate Read Hreg from Modbus Slave
+    // mb.readHreg(remote, REG, &res);  // Initiate Read Hreg from Modbus Slave
+    mb.writeHreg()
   } else {
     SerialUSB.println("Modbus not connected. Connecting...");
     mb.connect(remote, 502);           // Try to connect if not connected
   }
-  delay(5000);                     // Pulling interval
+  delay(1000);                     // Pulling interval
+
   mb.task();                      // Common local Modbus task
-  if (millis() - showLast > showDelay) { // Display register value every 5 seconds (with default settings)
-    showLast = millis();
-    SerialUSB.println(res);
-  }
+  SerialUSB.println(res);
+
+  // if (millis() - showLast > showDelay) { // Display register value every 5 seconds (with default settings)
+  //   showLast = millis();
+  // }
 
   // Wait 5 seconds
   // delay(5000);
