@@ -11,9 +11,9 @@ int main(void){
 // Required libraries
 // #include <SoftwareSerialUSB.h>
 
-#include <Ethernet.h>
-#include <ArduinoRS485.h> // ArduinoModbus depends on the ArduinoRS485 library
-#include <ArduinoModbus.h>
+#include <SPI.h>
+#include <Ethernet.h>       // Ethernet library v2 is required
+#include <ModbusEthernet.h>
 
 // Arduino Zero only - fix Sserial Output
 // #define Serial SerialUSB
@@ -30,30 +30,15 @@ int main(void){
 #define BUZZ 13
 
 // Instantiate global variables
-// SoftwareSerial mySerial(RX, TX); // receivePin, transmitPin
+https://github.com/emelianov/modbus-esp8266/blob/master/examples/TCP-Ethernet/client/client.ino
+const uint16_t REG = 512;         // Modbus Hreg Offset
+IPAddress remote(192, 168, 1, 1); // Address of Modbus Slave device
+const int32_t showDelay = 5000;   // Show result every n'th mellisecond
 
-// Enter a MAC address for your controller below.
-// Newer Ethernet shields have a MAC address printed on a sticker on the shield
-// The IP address will be dependent on your local network:
-// https://github.com/arduino-libraries/ArduinoModbus/blob/master/examples/TCP/EthernetModbusClientToggle/EthernetModbusClientToggle.ino
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress ip(192, 168, 1, 2);   // Static IP assigned to the Arduino - master, client.
-
-EthernetClient ethernetClient;
-ModbusTCPClient modbusTCPClient(ethernetClient);
-
-IPAddress ipServer(192, 168, 1, 1); // IP Address of your Modbus server - the AC (slave, server)
-
-// EthernetServer ethServer(502);  // Port 502 should match AC's port
-// ModbusTCPServer modbusTCPServer;
-
-// Modbus global variables
-// https://github.com/CONTROLLINO-PLC/CONTROLLINO_Library/tree/6ed585278ac7ea3c43b7daaabec5e6362125f7f5/examples/Expand_Modbus/TCP
-// byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-// IPAddress ip(192, 168, 1, 1);       
-// EthernetClass ethernetClient;
-// ModbusTCPClient modbusTCPClient(ethernetClient);
-// IPAddress server(192, 168, 1, 2);  // IP address of the Modbus slave device (AC).
+// Enter a MAC address and IP address for your controller below.
+byte mac[] = {0xA8, 0x61, 0x0A, 0xAE, 0x34, 0x12};
+IPAddress ip(192, 168, 1, 2);     // The IP address will be dependent on your local network:
+ModbusEthernet mb;                // Declare ModbusTCP instance
 
 // Setup is called on time upon startup
 void setup() {
@@ -77,21 +62,14 @@ void setup() {
   // Configure Modbus Client (master)
   SerialUSB.println("Starting Ethernet Modbus TCP Client");
 
-  // Ethernet.init(ETHERNET_CS);
-  Ethernet.begin(mac, ip);
-
-  // Check for Ethernet hardware present
-  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-    SerialUSB.println("Ethernet shield not found");
-    while(true); // software abort, no point running without Ethernet hardware
-  }
-  if (Ethernet.linkStatus() == LinkOFF) {
-    SerialUSB.println("Ethernet cable not connected");
-  }
-
-  // Check and establish Modbus client connection
-  checkConnectModbus();
+  Ethernet.init(5);         // SS pin
+  Ethernet.begin(mac, ip);  // start the Ethernet connection
+  delay(1000);              // give the Ethernet shield a second to initialize
+  mb.client();              // Act as Modbus TCP client
 }
+
+uint16_t res = 0;
+uint32_t showLast = 0;
 
 // Loop is the main loop body
 void loop() {
@@ -113,50 +91,23 @@ void loop() {
   }       
 
   // Test - read set temperature - not works
-  // int temp = modbusTCPClient.inputRegisterRead(1, 0x0002);
-  // SerialUSB.print("Set temperature: ");
-  // SerialUSB.println(temp);
-
-  // From the AC documentation 
-  int transactionId = 0x0001; // A
-  int protocolId = 0x0000; // B
-  int messageLength = 4; // C - bytes after unitId
-  int unitId = 1; // D - on the Ac preferences set to 1
-  int functionCode = 0x03; // E - 0x03 for reading, 0x10 for writing to AC
-  int registerAddress = 0x0002; // F - from AC PDF Table - current tempearture
-  int registerQuantity = 1;// G - Specifies the quantity of registers to read or write.
-  
-  // Ensure Modbus client is working
-  checkConnectModbus();
-
-  // Try reading something - not works
-  /*
-  SerialUSB.println("Reading Input (R) or Holding (R/W) Registers:");
-  modbusTCPClient.requestFrom(SLAVE_ADDRESS, INPUT_REGISTERS, 0x0000, NUM_REGISTERS);
-  int nValues = modbusTCPClient.available();
-  SerialUSB.print("Available values: ");
-  SerialUSB.println(nValues);
-  for(int i = 0; i < nValues; i++){
-    long data = modbusTCPClient.read();
-    SerialUSB.println(data);
+if (mb.isConnected(remote)) {   // Check if connection to Modbus Slave is established
+    SerialUSB.println("Modbus connected");
+    // TYPEID id, uint16_t offset, uint16_t* value, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT
+    mb.readHreg(remote, REG, &res);  // Initiate Read Hreg from Modbus Slave
+  } else {
+    SerialUSB.println("Modbus not connected. Connecting...");
+    mb.connect(remote, 502);           // Try to connect if not connected
   }
-  SerialUSB.println(modbusTCPClient.lastError());
-  */
-  // modbusTCPClient.requestFrom(0x0000, COILS, 0x0000, NUM_REGISTERS); // connection timed out - maybe wrong address? trying 0x0001
-  // modbusTCPClient.requestFrom(0x0001 COILS, 0x0000, NUM_REGISTERS); // illegal function
-  // modbusTCPClient.requestFrom(0x0001, DISCRETE_INPUTS, 0x0000, NUM_REGISTERS); // illegal function
-
-  // long t = modbusTCPClient.inputRegisterRead(SLAVE_ADDRESS, 0x0100);
-  // SerialUSB.println(t);
-  // SerialUSB.println(modbusTCPClient.lastError());
-
-  // Try writing something - start the AC
-  modbusTCPClient.holdingRegisterWrite(SERVER_ADDRESS, 0x2F00, 1); // illegal function 
-  modbusTCPClient.holdingRegisterWrite(SERVER_ADDRESS, 0x2F00, 1); // illegal function 
-  SerialUSB.println(modbusTCPClient.lastError());
+  delay(5000);                     // Pulling interval
+  mb.task();                      // Common local Modbus task
+  if (millis() - showLast > showDelay) { // Display register value every 5 seconds (with default settings)
+    showLast = millis();
+    SerialUSB.println(res);
+  }
 
   // Wait 5 seconds
-  delay(5000);
+  // delay(5000);
 }
 
 // Alarm function - LED and active buzzer
@@ -177,19 +128,4 @@ void alarm(bool state){
     digitalWrite(LED, LOW);
     digitalWrite(BUZZ, LOW);
   }
-}
-
-void checkConnectModbus(){
-  // Check if Modbus TCP client is connected
-  while(!modbusTCPClient.connected()){
-    SerialUSB.println("\nModbus TCP client is not conected");
-    modbusTCPClient.begin(ipServer, 502);
-    // Delay 10 seconds
-    SerialUSB.print("Connecting.");
-    for (int i=0; i<10; i++){
-      SerialUSB.print(".");
-      delay(500);
-    }
-  }
-  SerialUSB.println("\nModbus TCP client is connected");
 }
