@@ -70,7 +70,7 @@ void setup() {
   mb.client();              // Act as Modbus TCP client
 }
 
-uint16_t res = 0;
+uint16_t res[100] = {0};
 uint32_t showLast = 0;
 
 // Loop is the main loop body
@@ -97,13 +97,16 @@ if (mb.isConnected(remote)) {   // Check if connection to Modbus Slave is establ
     SerialUSB.println("Modbus is connected");
     // TYPEID id, uint16_t offset, uint16_t* value, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT
     // mb.readHreg(remote, REG, &res);  // Initiate Read Hreg from Modbus Slave
-    mb.writeHreg()
+    // mb.writeHreg(1, 0x2F00, 1);
+    mb.writeCoil(1, 0x2F00, true); // writeCoil(id, reg.address, value, cb, unit);
+    for (int i=0; i<100;i++) {
+    mb.readHreg(1, 0x0000, &res[i], 1, nullptr, 1);
   } else {
     SerialUSB.println("Modbus not connected. Connecting...");
     mb.connect(remote, 502);           // Try to connect if not connected
   }
-  delay(1000);                     // Pulling interval
 
+  delay(100);                     // Pulling interval
   mb.task();                      // Common local Modbus task
   SerialUSB.println(res);
 
@@ -112,7 +115,7 @@ if (mb.isConnected(remote)) {   // Check if connection to Modbus Slave is establ
   // }
 
   // Wait 5 seconds
-  // delay(5000);
+  delay(5000);
 }
 
 // Alarm function - LED and active buzzer
