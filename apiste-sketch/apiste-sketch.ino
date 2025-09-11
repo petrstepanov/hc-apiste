@@ -37,6 +37,9 @@ byte mac[] = {0xA8, 0x61, 0x0A, 0xAE, 0x34, 0x12};
 // Arduino IP address (master, client)
 IPAddress ip(192, 168, 1, 2);
 
+// Subnet mask
+IPAddress subnet(255, 255, 255, 0);
+
 EthernetClient ethernetClient;
 ModbusTCPClient modbusTCPClient(ethernetClient);
 
@@ -51,6 +54,13 @@ void setup() {
      ; // wait for serial port to connect. Needed for native USB port only
   }
 
+  // Mark program start
+  SerialUSB.println(" _____     _ _        _____       _     _         ");
+  SerialUSB.println("|  |  |___| | |___   |  _  |___ _| |_ _|_|___ ___ ");
+  SerialUSB.println("|     | -_| | | . |  |     |  _| . | | | |   | . |");
+  SerialUSB.println("|__|__|___|_|_|___|  |__|__|_| |___|___|_|_|_|___|)");
+  SerialUSB.println("");
+  
   // Initialize MAX3232 RS232 COM port communication
   // mySerialUSB.begin(9600);
 
@@ -62,10 +72,9 @@ void setup() {
   pinMode(BUZZ, OUTPUT);    // Configures the LED pin to OUTPUT voltage
   digitalWrite(BUZZ, LOW);  // Output HIGH (5V) voltage to LED
 
-  // Configure Modbus Client (master)
-  SerialUSB.println("Starting Ethernet Modbus TCP Client");
-
   // Initialize Ethernet shield
+  SerialUSB.println("Establishing ethernet connection...");
+  Ethernet.setSubnetMask(subnet);
   Ethernet.begin(mac, ip);
 
   // Check Ethernet hardware is present
