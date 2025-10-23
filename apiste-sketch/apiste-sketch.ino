@@ -72,15 +72,16 @@ void loop() {
   int val = digitalRead(WTR);
   if(val == HIGH){
     SerialUSB.println("Water detected!");
-    alarm(true);
     if (on) setOnOff(0);
+    alarm(true);
   } else {
-    alarm(false);
     setOnOff(1);
-  }  
+    alarm(false);
+    delay(5000);
+  }
 
-  // Wait 20 seconds
-  delay(5000);
+  // Delay
+  delay(1000);
 }
 
 // Function waits for Ethernet cable to get connected
@@ -168,7 +169,7 @@ void setOnOff(int onOff){
 void alarm(bool state){
   if (state){
     digitalWrite(BUZZ, HIGH);
-    for (int i=1; i <= 10; i++){
+    for (int i=1; i <= 50; i++){
       if (i%2){
         digitalWrite(LED, HIGH);
       } else {
