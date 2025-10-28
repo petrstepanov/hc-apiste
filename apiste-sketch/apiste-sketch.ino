@@ -4,11 +4,11 @@
 #define PIN_LED 12
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
-// #define HAS_ETHERNET
+#define HAS_ETHERNET
 #define HAS_BUZZER       // Active buzzer
-#define HAS_LED          // LED for test
-#define HAS_LCD          // LCD screen 1602A V2.0
-#define HAS_DHT11        // Temperature and humidity sensor
+// #define HAS_LED          // LED for test
+// #define HAS_LCD          // LCD screen 1602A V2.0
+// #define HAS_DHT11        // Temperature and humidity sensor
 
 #ifdef HAS_ETHERNET
   // Add library "ArduinoModbus" by Arduino
@@ -36,7 +36,7 @@
 #endif
 
 // Uncomment if using Arduino Zero
-// #define Serial SerialUSB
+#define Serial SerialUSB
 
 #ifdef HAS_ETHERNET
   // Using official Arduino MODBUS example:
@@ -169,7 +169,7 @@ void loop() {
     getSetTemperature();
 
     // Read water level
-    int val = digitalRead(WTR);
+    int val = digitalRead(PIN_WTR);
     if(val == HIGH){
       Serial.println("Water detected!");
       if (on) setOnOff(0);
