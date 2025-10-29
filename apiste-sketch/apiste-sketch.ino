@@ -1,14 +1,14 @@
 // Define pins
 #define PIN_WTR 7
-#define PIN_BUZZ 13
+#define PIN_BUZZ 10
 #define PIN_LED 12
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 #define HAS_ETHERNET
 #define HAS_BUZZER       // Active buzzer
 // #define HAS_LED          // LED for test
-// #define HAS_LCD          // LCD screen 1602A V2.0
-// #define HAS_DHT11        // Temperature and humidity sensor
+#define HAS_LCD          // LCD screen 1602A V2.0
+#define HAS_DHT11        // Temperature and humidity sensor
 
 #ifdef HAS_ETHERNET
   // Add library "ArduinoModbus" by Arduino
@@ -21,7 +21,9 @@
 #ifdef HAS_LCD
   // Add library "LiquidCrystal_I2C" by Martin Kubovcik
   #include <LiquidCrystal_I2C.h>
-  LiquidCrystal_I2C lcd(0x27, 16, 2); // address, columns, rows
+  #include <Wire.h>
+  // Run "I2C Arduino Scanner" sketch to find the display address
+  LiquidCrystal_I2C lcd(0x28, 16, 2); // address, columns, rows
 #endif
 
 #ifdef HAS_DHT11
@@ -60,6 +62,7 @@ void setup() {
   #ifdef HAS_LCD
     lcd.init();
     lcd.backlight();
+    for (int i=0; i < 10; i++){lcd.blink();delay(1000);}
     lcd.setCursor(0, 0);
     lcd.print("Initializing...");
     lcd.setCursor(0, 1);
@@ -140,6 +143,10 @@ void loop() {
       delay(5000);  
       return;
     }
+    Serial.print("\nReading from DHT11: ");
+    Serial.print(ambientTemperature);
+    Serial.print("C, ");
+    Serial.println(ambientHumidity);
   #endif
 
   #ifdef HAS_LCD
@@ -280,7 +287,7 @@ void alarm(bool state){
 
   void setOnOff(int onOff){
     // Turn ON Test
-    Serial.println("\nWriting OFF Status");
+    Serial.println("\nWriting ON/OFF Status");
     int result = modbusTCPClient.beginTransmission(0x01, HOLDING_REGISTERS, 0x2F00, 2); // int id, int type, int address, int nb
     printResult(result);
     modbusTCPClient.write(onOff);
