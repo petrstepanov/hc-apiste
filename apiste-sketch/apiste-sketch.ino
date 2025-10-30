@@ -5,10 +5,10 @@
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 #define HAS_ETHERNET
-#define HAS_BUZZER       // Active buzzer
+// #define HAS_BUZZER       // Active buzzer
 // #define HAS_LED          // LED for test
-#define HAS_LCD          // LCD screen 1602A V2.0
-#define HAS_DHT11        // Temperature and humidity sensor
+// #define HAS_LCD          // LCD screen 1602A V2.0
+// #define HAS_DHT11        // Temperature and humidity sensor
 
 #ifdef HAS_ETHERNET
   // Add library "ArduinoModbus" by Arduino
@@ -21,9 +21,20 @@
 #ifdef HAS_LCD
   // Add library "LiquidCrystal_I2C" by Martin Kubovcik
   #include <LiquidCrystal_I2C.h>
-  #include <Wire.h>
-  // Run "I2C Arduino Scanner" sketch to find the display address
+  // Run "I2C Arduino Scanner" sketch to find the display address - UNOR3 0x27 - Zero 0x28
   LiquidCrystal_I2C lcd(0x28, 16, 2); // address, columns, rows
+  // ------ Adafruit
+  // #include "Adafruit_LiquidCrystal.h"
+  // Adafruit_LiquidCrystal lcd(0x28);
+  // ---- hd44780
+  /*
+  #include <Wire.h>
+  #include <hd44780.h>                       // main hd44780 header
+  #include <hd44780ioClass/hd44780_I2Cexp.h> // i2c expander i/o class header
+  hd44780_I2Cexp lcd; // declare lcd object: auto locate & auto config expander chip
+  const int LCD_COLS = 16;
+  const int LCD_ROWS = 2;
+  */
 #endif
 
 #ifdef HAS_DHT11
@@ -38,7 +49,7 @@
 #endif
 
 // Uncomment if using Arduino Zero
-#define Serial SerialUSB
+// #define Serial SerialUSB
 
 #ifdef HAS_ETHERNET
   // Using official Arduino MODBUS example:
@@ -56,23 +67,58 @@
   ModbusTCPClient modbusTCPClient(ethernetClient);
 #endif
 
+#ifdef HAS_LCD
+  void printLCD(char string[], bool clear = false){
+    if (clear) lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(string);
+  }
+
+  void printLCD(char string1[], char string2[]){
+    lcd.setCursor(0, 0);
+    lcd.print(strlen(string1) != 0 ? string1 : "                ");
+    lcd.setCursor(0, 1);
+    lcd.print(string2);
+  }
+#endif
+
 // Setup is called on time upon startup
 void setup() {
-  // 
   #ifdef HAS_LCD
     lcd.init();
     lcd.backlight();
-    for (int i=0; i < 10; i++){lcd.blink();delay(1000);}
-    lcd.setCursor(0, 0);
-    lcd.print("Initializing...");
-    lcd.setCursor(0, 1);
+    printLCD("Initializing", "Serial...");
+    // lcd.setCursor(0, 1);
     // lcd.clear();
+    // ------- Adafruit
+    // if (!lcd.begin(16, 2)) {
+    //   Serial.println("Could not init backpack. Check wiring.");
+    //   while(1);
+    // }
+    // Serial.println("Backpack init'd.");
+    // Print a message to the LCD.
+    // lcd.setBacklight(0x0);
+    // lcd.print("hello, world!");
+    //------- hd44780
+    /*
+    int status;
+    status = lcd.begin(LCD_COLS, LCD_ROWS);
+    if(status) // non zero status means it was unsuccesful
+    {
+      // hd44780 has a fatalError() routine that blinks an led if possible
+      // begin() failed so blink error code using the onboard LED if possible
+      hd44780::fatalError(status); // does not return
+      Serial.println(status);
+    }
+	  // Print a message to the LCD
+	  lcd.print("Hello, World!");
+    */
   #endif
 
   // Initialize serial communication with the Arduino (TTL)
   Serial.begin(9600);
   while (!Serial.available()) {
-     ; // wait for serial port to connect. Needed for native USB port only
+    ; // wait for serial port to connect. Needed for native USB port only
   }
 
   // Mark program start
@@ -127,6 +173,8 @@ void setup() {
 }
 
 void loop() {
+  delay(5000);
+  return;
   // Read ambient temperature and humidity
   float ambientTemperature = 0;
   float ambientHumidity = 0;
