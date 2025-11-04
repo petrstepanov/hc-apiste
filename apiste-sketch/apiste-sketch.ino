@@ -1,14 +1,17 @@
 // Define pins
 #define PIN_WTR 7
-#define PIN_BUZZ 13
-#define PIN_LED 12
+#define PIN_BUZZ 3
+#define PIN_LED_RED 12
+#define PIN_LED_GREEN 11
+#define PIN_LED_YELLOW 10
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 // #define HAS_ETHERNET
-#define HAS_BUZZER       // Active buzzer
-#define HAS_LED          // LED for test
+// #define HAS_LED          // LED for test
 #define HAS_LCD          // LCD screen 1602A V2.0
-#define HAS_DHT11        // Temperature and humidity sensor
+// #define HAS_DHT11        // Temperature and humidity sensor
+// #define HAS_WTR
+// #define HAS_BUZZ
 
 #ifdef HAS_ETHERNET
   // Add library "ArduinoModbus" by Arduino
@@ -56,7 +59,20 @@
 
 // Setup is called on time upon startup
 void setup() {
-  // 
+  // Configure Pin Modes
+  pinMode(PIN_WTR, INPUT);
+  pinMode(PIN_BUZZ, OUTPUT);
+  pinMode(PIN_LED_RED, OUTPUT);
+  pinMode(PIN_LED_GREEN, OUTPUT);
+  pinMode(PIN_LED_YELLOW, OUTPUT);
+  pinMode(PIN_DHT, INPUT);
+
+
+  digitalWrite(PIN_LED_YELLOW, HIGH);
+  digitalWrite(PIN_LED_GREEN, LOW);
+  digitalWrite(PIN_LED_RED, LOW);
+
+  // LCD - could not get to work
   #ifdef HAS_LCD
     lcd.init();
     lcd.backlight();
@@ -124,6 +140,9 @@ void setup() {
 }
 
 void loop() {
+  // Fade booting yellow pin
+  digitalWrite(PIN_LED_YELLOW, LOW);
+
   // Read ambient temperature and humidity
   float ambientTemperature = 0;
   float ambientHumidity = 0;
@@ -137,7 +156,10 @@ void loop() {
     ambientHumidity = event.relative_humidity;
     if (isnan(ambientHumidity) || isnan(ambientTemperature)) {
       Serial.println("Failed to read from DHT sensor!");
-      delay(5000);  
+      #ifdef HAS_LED
+        digitalWrite(PIN_LED_YELLOW, HIGH);
+      #endif
+      delay(5000);
       return;
     }
   #endif
@@ -155,6 +177,18 @@ void loop() {
     delay(2000);
   #endif
 
+  int val = LOW;
+  #ifdef HAS_WTR
+    val = digitalRead(PIN_WTR);
+    if(val == HIGH){
+      Serial.println("Wet!");
+      alarm(true);
+    } else {
+      Serial.println("Dry.");
+      alarm(false);
+    }
+  #endif
+
   #ifdef HAS_ETHERNET
     // Ensure Ethernet cable is connected
     checkConnectEthernet();
@@ -169,15 +203,10 @@ void loop() {
     getSetTemperature();
 
     // Read water level
-    int val = digitalRead(WTR);
     if(val == HIGH){
-      Serial.println("Water detected!");
       if (on) setOnOff(0);
-      alarm(true);
     } else {
       setOnOff(1);
-      alarm(false);
-      delay(5000);
     }
   #endif
 
@@ -187,22 +216,31 @@ void loop() {
 
 // Alarm function - LED and active buzzer
 void alarm(bool state){
+  // Alarm ON
   if (state){
-    digitalWrite(PIN_BUZZ, HIGH);
-    for (int i=1; i <= 50; i++){
-      if (i%2){
-        digitalWrite(PIN_LED, HIGH);
-      } else {
-        digitalWrite(PIN_LED, LOW);
-      }
-      delay(100);
+    #ifdef HAS_LED
+      digitalWrite(PIN_LED_GREEN, LOW);
+      digitalWrite(PIN_LED_RED, HIGH);
+    #endif
+    for (int i=1; i <= 20; i++){
+      #ifdef HAS_LED
+        digitalWrite(PIN_LED_RED, i%2==0?LOW:HIGH);
+      #endif
+      #ifdef HAS_BUZZ
+        digitalWrite(PIN_BUZZ, i%2==0?LOW:HIGH);
+      #endif
+      delay(200);
     }
-    digitalWrite(PIN_BUZZ, LOW);
+    return;
   }
-  else {
-    digitalWrite(PIN_LED, LOW);
+  // Alarm OFF
+  #ifdef HAS_LED
+    digitalWrite(PIN_LED_GREEN, HIGH);
+    digitalWrite(PIN_LED_RED, LOW);
+  #endif
+  #ifdef HAS_BUZZ
     digitalWrite(PIN_BUZZ, LOW);
-  }
+  #endif
 }
 
 #ifdef HAS_ETHERNET
@@ -219,6 +257,9 @@ void alarm(bool state){
 
   // Function waits for Ethernet cable to get connected
   void checkConnectEthernet(){
+    #ifdef HAS_LED
+      digitalWrite(PIN_LED_YELLOW, HIGH);
+    #endif
     if (Ethernet.linkStatus() == LinkOFF){
       Serial.print("Ethernet cable not connected. Connect now.");
     }
@@ -226,11 +267,17 @@ void alarm(bool state){
       Serial.print(".");
       delay(1000);
     }
+    #ifdef HAS_LED
+      digitalWrite(PIN_LED_YELLOW, LOW);
+    #endif
     Serial.println("Ethernet cable is connected.");
   }
 
   // Function checks id MODBUS is connected. Connects if necessary.
   void checkConnectModbus(){
+    #ifdef HAS_LED
+      digitalWrite(PIN_LED_YELLOW, HIGH);
+    #endif
     // Check if Modbus TCP client is connected
     Serial.print("Modbus TCP client is not conected. Connecting.");  
     while(!modbusTCPClient.connected()){
@@ -242,6 +289,9 @@ void alarm(bool state){
         delay(1000);
       }
     }
+    #ifdef HAS_LED
+      digitalWrite(PIN_LED_YELLOW, LOW);
+    #endif
     Serial.println("\nModbus TCP client is connected.");
   }
 
