@@ -7,11 +7,11 @@
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 // #define HAS_ETHERNET
-// #define HAS_LED          // LED for test
+#define HAS_LED          // LED for test
 #define HAS_LCD          // LCD screen 1602A V2.0
-// #define HAS_DHT11        // Temperature and humidity sensor
-// #define HAS_WTR
-// #define HAS_BUZZ
+#define HAS_DHT11        // Temperature and humidity sensor
+#define HAS_WTR
+#define HAS_BUZZ
 
 #ifdef HAS_ETHERNET
   // Add library "ArduinoModbus" by Arduino
@@ -22,9 +22,12 @@
 #endif
 
 #ifdef HAS_LCD
-  // Add library "LiquidCrystal_I2C" by Martin Kubovcik
-  #include <LiquidCrystal_I2C.h>
-  LiquidCrystal_I2C lcd(0x27, 16, 2); // address, columns, rows
+  #include <Wire.h>
+  #include <hd44780.h>
+  #include <hd44780ioClass/hd44780_I2Cexp.h>
+  hd44780_I2Cexp lcd;
+  const int LCD_COLS = 16;
+  const int LCD_ROWS = 2;
 #endif
 
 #ifdef HAS_DHT11
@@ -57,6 +60,21 @@
   ModbusTCPClient modbusTCPClient(ethernetClient);
 #endif
 
+#ifdef HAS_LCD
+  void printLCD(char string[], bool clear = false){
+    if (clear) lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(string);
+  }
+
+  void printLCD(char string1[], char string2[]){
+    lcd.setCursor(0, 0);
+    lcd.print(strlen(string1) != 0 ? string1 : "                ");
+    lcd.setCursor(0, 1);
+    lcd.print(string2);
+  }
+#endif
+
 // Setup is called on time upon startup
 void setup() {
   // Configure Pin Modes
@@ -74,12 +92,16 @@ void setup() {
 
   // LCD - could not get to work
   #ifdef HAS_LCD
-    lcd.init();
-    lcd.backlight();
-    lcd.setCursor(0, 0);
-    lcd.print("Initializing...");
-    lcd.setCursor(0, 1);
-    // lcd.clear();
+    int status;
+    status = lcd.begin(LCD_COLS, LCD_ROWS);
+    if (status){
+      Serial.println("LCD Error");
+      Serial.println(status);
+      hd44780::fatalError(status); // does not return
+    }
+	  // Print a message to the LCD
+    Serial.println("LCD OK");
+	  lcd.print("Initializing...");
   #endif
 
   // Initialize serial communication with the Arduino (TTL)
