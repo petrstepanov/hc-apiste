@@ -3,7 +3,7 @@
 #define PIN_BUZZ 3
 #define PIN_LED_RED 12
 #define PIN_LED_GREEN 11
-#define PIN_LED_YELLOW 10
+#define PIN_LED_YELLOW 9
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 #define HAS_ETHERNET
@@ -298,9 +298,6 @@ void alarm(bool state){
 
   // Function checks id MODBUS is connected. Connects if necessary.
   void checkConnectModbus(){
-    #ifdef HAS_LED
-      digitalWrite(PIN_LED_YELLOW, HIGH);
-    #endif
     // Check if Modbus TCP client is connected
     Serial.print("Modbus TCP client is not conected. Connecting.");  
     while(!modbusTCPClient.connected()){
@@ -308,13 +305,13 @@ void alarm(bool state){
       modbusTCPClient.begin(ipApiste, 502);
       // Delay 10 seconds
       for (int i=0; i<10; i++){
+        #ifdef HAS_LED
+          digitalWrite(PIN_LED_YELLOW, i%2 == 0 ? HIGH : LOW);
+        #endif
         Serial.print(".");
         delay(1000);
       }
     }
-    #ifdef HAS_LED
-      digitalWrite(PIN_LED_YELLOW, LOW);
-    #endif
     Serial.println("\nModbus TCP client is connected.");
   }
 
