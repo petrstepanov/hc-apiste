@@ -331,10 +331,12 @@ void alarm(bool state){
 
   void setSetTemperature(double t){
       // Write Set Temperature
-    Serial.println("\nWriting Set Temperature");
+    Serial.print("\nWriting Set Temperature ");
+    Serial.print(t);
+    Serial.println("*C");
     int result = modbusTCPClient.beginTransmission(0x01, HOLDING_REGISTERS,  0x0002, 2); // int id, int type, int address, int nb
     printResult(result);
-    modbusTCPClient.write((unsigned int)t*100);
+    modbusTCPClient.write((unsigned int)(t*100));
     modbusTCPClient.endTransmission();
   }
 
@@ -353,7 +355,8 @@ void alarm(bool state){
 
   void setOnOff(int onOff){
     // Turn ON Test
-    Serial.println("\nWriting OFF Status");
+    Serial.print("\nWriting ");
+    Serial.println(onOff == 0 ? "OFF Status" : "ON Status");
     int result = modbusTCPClient.beginTransmission(0x01, HOLDING_REGISTERS, 0x2F00, 2); // int id, int type, int address, int nb
     printResult(result);
     modbusTCPClient.write(onOff);
