@@ -6,7 +6,7 @@
 #define PIN_LED_YELLOW 10
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
-// #define HAS_ETHERNET
+#define HAS_ETHERNET
 #define HAS_LED          // LED for test
 #define HAS_LCD          // LCD screen 1602A V2.0
 #define HAS_DHT11        // Temperature and humidity sensor
@@ -158,12 +158,28 @@ void setup() {
     Serial.println(F("------------------------------------"));
     // Set delay between sensor readings based on sensor details.
     delayMS = sensor.min_delay / 1000;
-  #endif  
+  #endif
+
+  // Fade booting yellow pin
+  digitalWrite(PIN_LED_YELLOW, LOW);
 }
 
 void loop() {
-  // Fade booting yellow pin
-  digitalWrite(PIN_LED_YELLOW, LOW);
+  // First check for water and alarm if overflow
+  int wtrVal = LOW;
+  #ifdef HAS_WTR
+    wtrVal = digitalRead(PIN_WTR);
+    if(wtrVal == HIGH){
+      Serial.println("Wet!");
+      alarm(true);
+      #ifdef HAS_LCD
+        printLCD("LEAK ALERT", "Empty tank now!");
+      #endif
+    } else {
+      Serial.println("Dry.");
+      alarm(false);
+    }
+  #endif
 
   // Read ambient temperature and humidity
   float ambientTemperature = 0;
@@ -178,10 +194,6 @@ void loop() {
     ambientHumidity = event.relative_humidity;
     if (isnan(ambientHumidity) || isnan(ambientTemperature)) {
       Serial.println("Failed to read from DHT sensor!");
-      #ifdef HAS_LED
-        digitalWrite(PIN_LED_YELLOW, HIGH);
-      #endif
-      delay(5000);
       return;
     }
   #endif
@@ -199,18 +211,6 @@ void loop() {
     delay(2000);
   #endif
 
-  int val = LOW;
-  #ifdef HAS_WTR
-    val = digitalRead(PIN_WTR);
-    if(val == HIGH){
-      Serial.println("Wet!");
-      alarm(true);
-    } else {
-      Serial.println("Dry.");
-      alarm(false);
-    }
-  #endif
-
   #ifdef HAS_ETHERNET
     // Ensure Ethernet cable is connected
     checkConnectEthernet();
@@ -221,19 +221,20 @@ void loop() {
     // Read set temerature
     int on = getOnOff();
 
-    // Read set temerature
-    getSetTemperature();
+    // Set temerature
+    setSetTemperature(ambientTemperature);
 
     // Read water level
-    if(val == HIGH){
+    if(wtrVal == HIGH){
       if (on) setOnOff(0);
+      return;
     } else {
       setOnOff(1);
     }
   #endif
 
   // Delay
-  delay(5000);
+  delay(60000);
 }
 
 // Alarm function - LED and active buzzer
@@ -279,11 +280,11 @@ void alarm(bool state){
 
   // Function waits for Ethernet cable to get connected
   void checkConnectEthernet(){
-    #ifdef HAS_LED
-      digitalWrite(PIN_LED_YELLOW, HIGH);
-    #endif
     if (Ethernet.linkStatus() == LinkOFF){
       Serial.print("Ethernet cable not connected. Connect now.");
+      #ifdef HAS_LED
+        digitalWrite(PIN_LED_YELLOW, HIGH);
+      #endif      
     }
     while (Ethernet.linkStatus() == LinkOFF) {
       Serial.print(".");
@@ -330,7 +331,7 @@ void alarm(bool state){
 
   void setSetTemperature(double t){
       // Write Set Temperature
-    Serial.println("\nWriting 22 C Set Temperature");
+    Serial.println("\nWriting Set Temperature");
     int result = modbusTCPClient.beginTransmission(0x01, HOLDING_REGISTERS,  0x0002, 2); // int id, int type, int address, int nb
     printResult(result);
     modbusTCPClient.write((unsigned int)t*100);
