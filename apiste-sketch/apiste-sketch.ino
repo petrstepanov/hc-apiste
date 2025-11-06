@@ -3,7 +3,7 @@
 #define PIN_BUZZ 3
 #define PIN_LED_RED 12
 #define PIN_LED_GREEN 11
-#define PIN_LED_YELLOW 9
+#define PIN_LED_YELLOW 9 // Pin 10 conflicts with Eth Shield: https://docs.arduino.cc/libraries/ethernet/
 #define PIN_DHT 2     // Digital pin connected to the DHT sensor
 
 #define HAS_ETHERNET
