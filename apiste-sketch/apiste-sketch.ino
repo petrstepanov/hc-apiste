@@ -194,12 +194,12 @@ void loop() {
         Serial.println("Wet!");
       #endif
       #ifdef HAS_LCD
-        printLCD("Leak alert!", "Empty tank now!");
+        printLCD("Water overflow!", "Empty tank now!");
       #endif
       alarm(true);
     } else {
       #ifdef HAS_LCD
-        printLCD("No water spill", "detected");
+        printLCD("Water level OK", ":-)");
       #endif
       #ifdef HAS_SERIAL
         Serial.println("Dry.");
@@ -367,7 +367,7 @@ void alarm(bool state){
       Serial.println("\nModbus TCP client is connected.");
     #endif
     #ifdef HAS_LCD
-      printLCD("MODBUS online", "Connection ok");
+      printLCD("MODBUS online", "Connection OK");
     #endif
 
   }
