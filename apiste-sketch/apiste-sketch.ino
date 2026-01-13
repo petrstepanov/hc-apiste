@@ -9,7 +9,7 @@
 #define HAS_ETHERNET
 #define HAS_LED          // LED for test
 #define HAS_LCD          // LCD screen 1602A V2.0
-// #define HAS_DHT11        // Temperature and humidity sensor
+#define HAS_DHT11        // Temperature and humidity sensor
 #define HAS_WTR
 #define HAS_BUZZ
 // #define HAS_SERIAL
